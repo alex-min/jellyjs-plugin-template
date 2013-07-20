@@ -17,10 +17,10 @@
   "author": "alex-min",
   "license": "MIT",
   "dependencies": {
-    "dot": "~1.0.1"
+    "dot": "~1.0.1",
+    "async": "~0.2.9"
   },
   "devDependencies": {
-    "async": "~0.2.9",
     "jellyjs": "0.x.x",
     "chai": "~1.7.0",
     "mocha": "~1.12.0"
