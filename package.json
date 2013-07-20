@@ -1,0 +1,28 @@
+{
+  "name": "jellyjs-plugin-template",
+  "version": "0.0.1",
+  "description": "Jelly.js template Plugin",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": "",
+  "keywords": [
+    "framework",
+    "web"
+  ],
+  "repository" : {
+        "type" : "git",
+        "url" : "https://github.com/alex-min/jellyjs-plugin-template.git"
+  },
+  "author": "alex-min",
+  "license": "MIT",
+  "dependencies": {
+  },
+  "devDependencies":{
+    "jellyjs-plugin-httpserver":"0.x.x",
+    "jellyjs":"0.x.x",
+    "chai": "~1.7.0",
+    "mocha": "~1.12.0"    
+  }
+}
