@@ -28,7 +28,7 @@ describe('#Plugin::routing', function() {
       return cb(err);
     });
   });
-  return it('Should transform everything into templates', function(cb) {
+  it('Should transform everything into templates', function(cb) {
     var jelly;
 
     jelly = new jy.Jelly();
@@ -59,6 +59,72 @@ describe('#Plugin::routing', function() {
           assert.equal(content.extension, '__template');
           assert.equal(toType(content.content), 'function');
           assert.equal(content.content(), 'TPL TEST');
+          return cb();
+        } catch (_error) {
+          e = _error;
+          return cb(e);
+        }
+      }
+    ], function(err) {
+      return cb(err);
+    });
+  });
+  it('Should throw an error when the postProcess is invalid', function(cb) {
+    return new jy.Jelly().boot({
+      directory: "" + __dirname + "/demoPostProcess",
+      folderPlugins: [
+        {
+          name: 'template',
+          directory: pluginDir
+        }
+      ]
+    }, function(err) {
+      if (err) {
+        return cb();
+      } else {
+        return cb(new Error("no errors detected"));
+      }
+    });
+  });
+  return it('Should transform everything into templates', function(cb) {
+    var jelly;
+
+    jelly = new jy.Jelly();
+    jelly.setRootDirectory("" + __dirname + "/demoPostProcess");
+    return async.series([
+      function(cb) {
+        return jelly.readJellyConfigurationFile(function(err) {
+          return cb(err, null);
+        });
+      }, function(cb) {
+        return jelly.readAllGeneralConfigurationFiles(function(err) {
+          return cb(err, null);
+        });
+      }, function(cb) {
+        return jelly.getPluginDirectoryList().readPluginFromPath(pluginDir, 'template', function(err, dt) {
+          return cb(err);
+        });
+      }, function(cb) {
+        var postProcess;
+
+        postProcess = jelly.getSharedObjectManager().getObject('template', 'postProcess').getCurrentContent();
+        postProcess.TEST = function() {
+          return "__1__";
+        };
+        return cb();
+      }, function(cb) {
+        return jelly.applyPluginsSpecified(true, function(err) {
+          return cb(err);
+        });
+      }, function(cb) {
+        var content, file;
+
+        try {
+          file = jelly.getChildByIdRec('module1-file1.tpl');
+          content = file.getCurrentContent();
+          assert.equal(content.extension, '__template');
+          assert.equal(toType(content.content), 'function');
+          assert.equal(content.content(), 'TPL TEST__1__');
           return cb();
         } catch (_error) {
           e = _error;
