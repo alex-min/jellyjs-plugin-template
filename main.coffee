@@ -1,5 +1,6 @@
 dot = require('dot')
 fs = require('fs')
+dotParsing = require('./dotParsing')
 
 dotProcessingArguments = {
   if: (arg) -> ";if (#{arg});{"
@@ -25,10 +26,9 @@ processFileModule = (dot, file) ->
   })
   ;
 
-processModule = (dot, obj, cb) ->
+processModule = (dot, obj) ->
   for file in obj.getChildList()
     processFileModule(dot, file)
-  cb()
 
 module.exports = {
   load: (cb) ->
@@ -50,35 +50,15 @@ module.exports = {
         throw new Error("Error encountered when executing #{name} as an argument on template postProcess")
 
 
-    t = dot.templateSettings
-    t.strip = false;
+    dot.templateSettings.strip = false
+
     if obj.Module == true
-      t.evaluate =    /\[\[([\s\S]+?\]?)\]\]/g
-      t.interpolate = /\[\[=([\s\S]+?)\]\]/g
-      t.encode =      /\[\[!([\s\S]+?)\]\]/g
-      t.use =         /\[\[#([\s\S]+?)\]\]/g
-      t.useParams =   /(^|[^\w$])def(?:\.|\[[\'\"])([\w$\.]+)(?:[\'\"]\])?\s*\:\s*([\w$\.]+|\"[^\"]+\"|\'[^\']+\'|\[[^\]]+\])/g
-      t.define =      /\[\[##\s*([\w\.$]+)\s*(\:|=)([\s\S]+?)#\]\]/g
-      t.defineParams = /^\s*([\w$]+):([\s\S]+)/
-      t.conditional = /\[\[\?(\?)?\s*([\s\S]*?)\s*\]\]/g
-      t.iterate =     /\[\[~\s*(?:\]\]|([\s\S]+?)\s*\:\s*([\w$]+)\s*(?:\:\s*([\w$]+))?\s*\]\])/g      
-      processModule(dot, obj, cb)      
-      return
-    if obj.File == true
-      t.evaluate =    /\{\{([\s\S]+?\}?)\}\}/g
-      t.interpolate = /\{\{=([\s\S]+?)\}\}/g
-      t.encode =      /\{\{!([\s\S]+?)\}\}/g
-      t.use =         /\{\{#([\s\S]+?)\}\}/g
-      t.useParams =   /(^|[^\w$])def(?:\.|\[[\'\"])([\w$\.]+)(?:[\'\"]\])?\s*\:\s*([\w$\.]+|\"[^\"]+\"|\'[^\']+\'|\{[^\}]+\})/g
-      t.define =      /\{\{##\s*([\w\.$]+)\s*(\:|=)([\s\S]+?)#\}\}/g
-      t.defineParams = /^\s*([\w$]+):([\s\S]+)/
-      t.conditional = /\{\{\?(\?)?\s*([\s\S]*?)\s*\}\}/g
-      t.iterate =     /\{\{~\s*(?:\}\}|([\s\S]+?)\s*\:\s*([\w$]+)\s*(?:\:\s*([\w$]+))?\s*\}\})/g      
-    try
+      dotParsing.setModuleSettings(dot.templateSettings);
+      processModule(dot, obj)      
+    else if obj.File == true
+      dotParsing.setFileSettings(dot.templateSettings);
       processFile(dot, obj)
-      cb(null, obj)
-    catch e
-      cb(e)
+    cb(null, obj)
   unload: (cb) ->
     cb()
 }
