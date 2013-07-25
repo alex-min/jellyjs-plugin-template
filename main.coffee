@@ -7,35 +7,78 @@ dotProcessingArguments = {
   endif: -> ";};"
   nop: ""
   postProcess: -> ""
+  displayStack: () ->
+    "{{=(typeof(_stack)==='undefined')? '[]':JSON.stringify(_stack)}}"
+  getCurrentFile: () ->
+
 }
 
-processFile = (dot, file) ->
+_beginStackFile = (fileid) ->
+  "{{;var _stack = ['#{fileid}'];}}"
+
+_beginStackPartial = (fileid) ->
+  "{{;_stack.push('#{fileid}');}}"
+
+
+_endStack =  () ->
+  "{{;_stack.pop();}}"
+
+## process a individual file
+processFile = (dot, file, dependencies) ->
+    contentToCompile = ''
+    try
       ct = file.getCurrentContent()
-      output = dot.compile(ct.content || '', dotProcessingArguments)
+      console.log file.getId()
+      contentToCompile = \
+        _beginStackFile(file.getId()) \
+        + ct.content \
+        + _endStack();
+      output = dot.compile(contentToCompile || '', dotProcessingArguments)
       file.updateContent({
         extension:'__template',
         content:output
+        dependencies: dependencies
       })
+    catch e
+      throw new Error("Cannot compile #{file.getId()}, #{e.message}, #{contentToCompile}")
 
+## process an individual file called within a module or a generalconfig
+## these are already parsed and added as functions
 processFileModule = (dot, file) ->
-  ct = file.getCurrentContent()
-  output = dot.compile(ct.content.toString() || '', dotProcessingArguments)
-  file.updateContent({
-      extension:'__template',
-      content:new Function('return ' + output())()
-  })
+  contentToCompile = ''
+  try
+    ct = file.getCurrentContent()
+    contentToCompile = ct.content.toString()
+    output = dot.compile(contentToCompile || '', dotProcessingArguments)
+    file.updateContent({
+        extension:'__template',
+        content:new Function('return ' + output())()
+    })
+  catch e
+    throw new Error("Cannot compile #{file.getId()}, #{e.message}, #{contentToCompile}")    
   ;
 
-processModule = (dot, obj) ->
-  for file in obj.getChildList()
+processModule = (dot, module) ->
+  for file in module.getChildList()
     processFileModule(dot, file)
+
+processGeneralConfig = (dot, generalconfig) ->
+  for module in generalconfig.getChildList()
+    processModule(dot, module)
 
 module.exports = {
   load: (cb) ->
     @getSharedObjectManager().registerObject('template', 'postProcess', {});
     cb()
   oncall: (obj, params, cb) ->
+    self = @
+    params.pluginParameters ?= {}
+    options = params.pluginParameters.template || {}
+    dependencies = []
     postProcess = @getSharedObjectManager().getObject('template','postProcess').getCurrentContent()
+    
+    ## the postprocess helper is calling function registrer by the postProcess object
+    ## this way, external plugins can be called within a method
     dotProcessingArguments.postProcess = (name, args) ->
       if typeof postProcess[name] == 'undefined' || postProcess[name] == null
         throw new Error("Unable to process #{name} on postProcess")
@@ -49,15 +92,31 @@ module.exports = {
       catch e
         throw new Error("Error encountered when executing #{name} as an argument on template postProcess")
 
+    ## include a template in a other template
+    dotProcessingArguments.include = (fileId) ->
+      err = "[#{(self.getParent() || {getId:->{}}).getId()}]:"
+      jelly = self.getParentOfClass('Jelly')
+      file = jelly.getChildByIdRec(fileId)
+      if file == null
+        throw new Error("#{err} Cannot find fild Id '#{fileId}' on include statement")
+      tplContent = file.getLastContentOfExtension('tpl')
+      if tplContent == null
+        throw new Error("#{err} There is no tpl content loaded for '#{fileId}' on include statement")
+      dependencies.push(fileId)
+      return _beginStackPartial(fileId) + tplContent.content + _endStack()
 
-    dot.templateSettings.strip = false
+    dot.templateSettings.strip = options.strip || false
 
-    if obj.Module == true
+    if obj.GeneralConfiguration == true
+      dotParsing.setGeneralConfigFileSettings(dot.templateSettings)
+      processGeneralConfig(dot, obj)
+    else if obj.Module == true
       dotParsing.setModuleSettings(dot.templateSettings);
       processModule(dot, obj)      
     else if obj.File == true
+      dependencies.push(obj.getId())
       dotParsing.setFileSettings(dot.templateSettings);
-      processFile(dot, obj)
+      processFile(dot, obj, dependencies)
     cb(null, obj)
   unload: (cb) ->
     cb()
