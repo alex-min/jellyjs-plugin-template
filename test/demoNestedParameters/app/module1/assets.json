@@ -1,0 +1,12 @@
+{
+  "fileList":[
+    {"name":"file1.tpl", "params":{}},
+    {"name":"file2.tpl", "params":{}},
+    {"name":"file3.tpl", "params":{}}
+  ],
+  "filePlugins": ["template"],
+
+  "filePluginParameters" : {
+      "template":{"strip":"true"}
+  }  
+}

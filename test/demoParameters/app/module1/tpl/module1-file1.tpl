@@ -1,0 +1,2 @@
+TPL TEST
+{{=self.TEST}}

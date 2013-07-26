@@ -117,7 +117,7 @@ describe('#Plugin::template', ->
           cb(e)
     )
   )
-  it('Sould have a \'dependencies\' property', (cb) ->
+  it('Should have a \'dependencies\' property', (cb) ->
     jelly = new jy.Jelly()
     jelly.boot({
       directory:"#{__dirname}/demoTemplateInclude"
@@ -139,6 +139,97 @@ describe('#Plugin::template', ->
           cb()
         catch e
           cb(e)
+    )
+  )
+  it('self should be bind to local parameters (in a unique template)', (cb) ->
+    jelly = new jy.Jelly()
+    jelly.boot({
+      directory:"#{__dirname}/demoParameters"
+      folderPlugins:[{name:'template', directory:pluginDir}]
+    }, (err) ->
+      if err?
+        cb(err); cb = ->
+        return
+      try
+        file = jelly.getChildByIdRec('module1-file1.tpl')
+        content = file.getCurrentContent()
+        assert.equal(toType(content), 'object')
+        assert.equal(toType(content.content), 'function')
+        assert.equal(content.content(), 'TPL TESTundefined')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 1}}), 'TPL TEST1')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 2}}), 'TPL TEST2')
+        cb()
+      catch e
+        cb(e)        
+    )
+  )
+  it('self should be bind to local parameters (in nested templates)', (cb) ->
+    jelly = new jy.Jelly()
+    jelly.boot({
+      directory:"#{__dirname}/demoNestedParameters"
+      folderPlugins:[{name:'template', directory:pluginDir}]
+    }, (err) ->
+      if err?
+        cb(err); cb = ->
+        return
+      try
+        file = jelly.getChildByIdRec('module1-file1.tpl')
+        content = file.getCurrentContent()
+        assert.equal(toType(content), 'object')
+        assert.equal(toType(content.content), 'function')
+        assert.equal(content.content(), 'FILE1undefined')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 'A'}}), 'FILE1A')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 'B'}}), 'FILE1B')
+        file = jelly.getChildByIdRec('module1-file2.tpl')
+        content = file.getCurrentContent()
+        assert.equal(toType(content), 'object')
+        assert.equal(toType(content.content), 'function')
+        assert.equal(content.content(), 'FILE2undefinedFILE1undefined')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 'A'}}), 'FILE2undefinedFILE1A')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 'B'}}), 'FILE2undefinedFILE1B')
+        assert.equal(content.content({'module1-file2.tpl':{'TEST': 'A'}}), 'FILE2AFILE1undefined')
+        assert.equal(content.content({'module1-file2.tpl':{'TEST': 'B'}}), 'FILE2BFILE1undefined')
+        assert.equal(content.content(
+          {
+            'module1-file1.tpl':{'TEST': 'A'},
+            'module1-file2.tpl':{'TEST': 'B'},
+          }
+        ), 'FILE2BFILE1A')
+        assert.equal(content.content(
+          {
+            'module1-file1.tpl':{'TEST': 'C'},
+            'module1-file2.tpl':{'TEST': 'D'},
+          }
+        ), 'FILE2DFILE1C')
+        file = jelly.getChildByIdRec('module1-file3.tpl')
+        content = file.getCurrentContent()
+        assert.equal(toType(content), 'object')
+        assert.equal(toType(content.content), 'function')
+        assert.equal(content.content(), 'FILE3undefinedFILE2undefinedFILE1undefined')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 'A'}}), 'FILE3undefinedFILE2undefinedFILE1A')
+        assert.equal(content.content({'module1-file1.tpl':{'TEST': 'B'}}), 'FILE3undefinedFILE2undefinedFILE1B')
+        assert.equal(content.content({'module1-file2.tpl':{'TEST': 'A'}}), 'FILE3undefinedFILE2AFILE1undefined')
+        assert.equal(content.content({'module1-file2.tpl':{'TEST': 'B'}}), 'FILE3undefinedFILE2BFILE1undefined')
+        assert.equal(content.content({'module1-file3.tpl':{'TEST': 'A'}}), 'FILE3AFILE2undefinedFILE1undefined')
+        assert.equal(content.content({'module1-file3.tpl':{'TEST': 'B'}}), 'FILE3BFILE2undefinedFILE1undefined')
+        assert.equal(content.content(
+          {
+            'module1-file1.tpl':{'TEST': 'A'},
+            'module1-file2.tpl':{'TEST': 'B'},
+            'module1-file3.tpl':{'TEST': 'C'},
+          }
+        ), 'FILE3CFILE2BFILE1A')
+        assert.equal(content.content(
+          {
+            'module1-file1.tpl':{'TEST': 'D'},
+            'module1-file2.tpl':{'TEST': 'E'},
+            'module1-file3.tpl':{'TEST': 'F'},
+          }
+        ), 'FILE3FFILE2EFILE1D')
+
+        cb()
+      catch e
+        cb(e)        
     )
   )
 )

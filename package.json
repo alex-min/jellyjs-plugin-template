@@ -1,6 +1,6 @@
 {
   "name": "jellyjs-plugin-template",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Jelly.js template Plugin",
   "main": "index.js",
   "scripts": {

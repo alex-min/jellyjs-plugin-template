@@ -14,21 +14,24 @@ dotProcessingArguments = {
 }
 
 _beginStackFile = (fileid) ->
-  "{{;var _stack = ['#{fileid}'];}}"
+  "{{;it = it || {};var _stack = ['#{fileid}'];var self = it['#{fileid}'] || {};}}"
 
 _beginStackPartial = (fileid) ->
-  "{{;_stack.push('#{fileid}');}}"
+  "{{;_stack.push('#{fileid}');self = it['#{fileid}'] || {};}}"
 
 
 _endStack =  () ->
-  "{{;_stack.pop();}}"
+  ""
+
+_endStackPartial = () ->
+  "{{;_stack.pop();self = out[(_stack[_stack.length - 1]||'')] || {};}}"
+
 
 ## process a individual file
 processFile = (dot, file, dependencies) ->
     contentToCompile = ''
     try
       ct = file.getCurrentContent()
-      console.log file.getId()
       contentToCompile = \
         _beginStackFile(file.getId()) \
         + ct.content \
@@ -77,6 +80,7 @@ module.exports = {
     dependencies = []
     postProcess = @getSharedObjectManager().getObject('template','postProcess').getCurrentContent()
     
+    @getLogger().info("Processing file #{obj.getId()}")
     ## the postprocess helper is calling function registrer by the postProcess object
     ## this way, external plugins can be called within a method
     dotProcessingArguments.postProcess = (name, args) ->
@@ -103,7 +107,7 @@ module.exports = {
       if tplContent == null
         throw new Error("#{err} There is no tpl content loaded for '#{fileId}' on include statement")
       dependencies.push(fileId)
-      return _beginStackPartial(fileId) + tplContent.content + _endStack()
+      return _beginStackPartial(fileId) + tplContent.content + _endStackPartial()
 
     dot.templateSettings.strip = options.strip || false
 
