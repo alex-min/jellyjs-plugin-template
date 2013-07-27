@@ -274,7 +274,7 @@ describe('#Plugin::template', function() {
       }
     });
   });
-  return it('self should be bind to local parameters (in nested templates)', function(cb) {
+  it('self should be bind to local parameters (in nested templates)', function(cb) {
     var jelly;
 
     jelly = new jy.Jelly();
@@ -413,6 +413,36 @@ describe('#Plugin::template', function() {
         e = _error;
         return cb(e);
       }
+    });
+  });
+  return it('Should ignore file extensions not listed in the allowedExtensions property', function(cb) {
+    var jelly;
+
+    jelly = new jy.Jelly();
+    return jelly.boot({
+      directory: "" + __dirname + "/demoIgnoreExtensions",
+      folderPlugins: [
+        {
+          name: 'template',
+          directory: pluginDir
+        }
+      ]
+    }, function(err) {
+      var content, file;
+
+      file = jelly.getChildByIdRec('module1-file1.tpl');
+      content = file.getCurrentContent();
+      assert.equal(toType(content), 'object');
+      assert.equal(content.extension, '__template');
+      file = jelly.getChildByIdRec('module1-file1.rat');
+      content = file.getCurrentContent();
+      assert.equal(toType(content), 'object');
+      assert.equal(content.extension, '__template');
+      file = jelly.getChildByIdRec('module1-file1.txt');
+      content = file.getCurrentContent();
+      assert.equal(toType(content), 'object');
+      assert.equal(content.extension, 'txt');
+      return cb();
     });
   });
 });

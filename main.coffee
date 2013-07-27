@@ -28,10 +28,14 @@ _endStackPartial = () ->
 
 
 ## process a individual file
-processFile = (dot, file, dependencies) ->
+processFile = (dot, file, dependencies, options) ->
     contentToCompile = ''
+    allowedExtensions = options.allowedExtensions || ['tpl']
     try
       ct = file.getCurrentContent()
+      if ct.extension == null || typeof ct.extension == 'undefined' || \
+        allowedExtensions.indexOf(ct.extension) == -1
+          return
       contentToCompile = \
         _beginStackFile(file.getId()) \
         + ct.content \
@@ -47,7 +51,7 @@ processFile = (dot, file, dependencies) ->
 
 ## process an individual file called within a module or a generalconfig
 ## these are already parsed and added as functions
-processFileModule = (dot, file) ->
+processFileModule = (dot, file, options) ->
   contentToCompile = ''
   try
     ct = file.getCurrentContent()
@@ -61,13 +65,15 @@ processFileModule = (dot, file) ->
     throw new Error("Cannot compile #{file.getId()}, #{e.message}, #{contentToCompile}")    
   ;
 
-processModule = (dot, module) ->
+processModule = (dot, module, options) ->
   for file in module.getChildList()
-    processFileModule(dot, file)
+    processFileModule(dot, file, options)
+  return
 
-processGeneralConfig = (dot, generalconfig) ->
+processGeneralConfig = (dot, generalconfig, options) ->
   for module in generalconfig.getChildList()
-    processModule(dot, module)
+    processModule(dot, module, options)
+  return
 
 module.exports = {
   load: (cb) ->
@@ -113,14 +119,14 @@ module.exports = {
 
     if obj.GeneralConfiguration == true
       dotParsing.setGeneralConfigFileSettings(dot.templateSettings)
-      processGeneralConfig(dot, obj)
+      processGeneralConfig(dot, obj, options)
     else if obj.Module == true
       dotParsing.setModuleSettings(dot.templateSettings);
-      processModule(dot, obj)      
+      processModule(dot, obj, options)      
     else if obj.File == true
       dependencies.push(obj.getId())
       dotParsing.setFileSettings(dot.templateSettings);
-      processFile(dot, obj, dependencies)
+      processFile(dot, obj, dependencies, options)
     cb(null, obj)
   unload: (cb) ->
     cb()

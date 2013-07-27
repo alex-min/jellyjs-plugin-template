@@ -40,12 +40,16 @@ _endStackPartial = function() {
   return "{{;_stack.pop();self = out[(_stack[_stack.length - 1]||'')] || {};}}";
 };
 
-processFile = function(dot, file, dependencies) {
-  var contentToCompile, ct, e, output;
+processFile = function(dot, file, dependencies, options) {
+  var allowedExtensions, contentToCompile, ct, e, output;
 
   contentToCompile = '';
+  allowedExtensions = options.allowedExtensions || ['tpl'];
   try {
     ct = file.getCurrentContent();
+    if (ct.extension === null || typeof ct.extension === 'undefined' || allowedExtensions.indexOf(ct.extension) === -1) {
+      return;
+    }
     contentToCompile = _beginStackFile(file.getId()) + ct.content + _endStack();
     output = dot.compile(contentToCompile || '', dotProcessingArguments);
     return file.updateContent({
@@ -59,7 +63,7 @@ processFile = function(dot, file, dependencies) {
   }
 };
 
-processFileModule = function(dot, file) {
+processFileModule = function(dot, file, options) {
   var contentToCompile, ct, e, output;
 
   contentToCompile = '';
@@ -77,28 +81,24 @@ processFileModule = function(dot, file) {
   }
 };
 
-processModule = function(dot, module) {
-  var file, _i, _len, _ref, _results;
+processModule = function(dot, module, options) {
+  var file, _i, _len, _ref;
 
   _ref = module.getChildList();
-  _results = [];
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     file = _ref[_i];
-    _results.push(processFileModule(dot, file));
+    processFileModule(dot, file, options);
   }
-  return _results;
 };
 
-processGeneralConfig = function(dot, generalconfig) {
-  var module, _i, _len, _ref, _results;
+processGeneralConfig = function(dot, generalconfig, options) {
+  var module, _i, _len, _ref;
 
   _ref = generalconfig.getChildList();
-  _results = [];
   for (_i = 0, _len = _ref.length; _i < _len; _i++) {
     module = _ref[_i];
-    _results.push(processModule(dot, module));
+    processModule(dot, module, options);
   }
-  return _results;
 };
 
 module.exports = {
@@ -158,14 +158,14 @@ module.exports = {
     dot.templateSettings.strip = options.strip || false;
     if (obj.GeneralConfiguration === true) {
       dotParsing.setGeneralConfigFileSettings(dot.templateSettings);
-      processGeneralConfig(dot, obj);
+      processGeneralConfig(dot, obj, options);
     } else if (obj.Module === true) {
       dotParsing.setModuleSettings(dot.templateSettings);
-      processModule(dot, obj);
+      processModule(dot, obj, options);
     } else if (obj.File === true) {
       dependencies.push(obj.getId());
       dotParsing.setFileSettings(dot.templateSettings);
-      processFile(dot, obj, dependencies);
+      processFile(dot, obj, dependencies, options);
     }
     return cb(null, obj);
   },

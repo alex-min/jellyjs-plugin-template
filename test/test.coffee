@@ -232,4 +232,29 @@ describe('#Plugin::template', ->
         cb(e)        
     )
   )
+  it('Should ignore file extensions not listed in the allowedExtensions property', (cb) ->
+    jelly = new jy.Jelly()
+    jelly.boot({
+      directory:"#{__dirname}/demoIgnoreExtensions"
+      folderPlugins:[{name:'template', directory:pluginDir}]
+    }, (err) ->
+      file = jelly.getChildByIdRec('module1-file1.tpl')
+      content = file.getCurrentContent()
+      assert.equal(toType(content), 'object')
+      assert.equal(content.extension, '__template')
+
+      file = jelly.getChildByIdRec('module1-file1.rat')
+      content = file.getCurrentContent()
+      assert.equal(toType(content), 'object')
+      assert.equal(content.extension, '__template')
+
+      file = jelly.getChildByIdRec('module1-file1.txt')
+      content = file.getCurrentContent()
+      assert.equal(toType(content), 'object')
+      assert.equal(content.extension, 'txt')
+
+
+      cb()
+    )
+  )
 )

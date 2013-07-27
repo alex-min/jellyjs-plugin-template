@@ -1,0 +1,14 @@
+{
+  "fileList":[
+    {"name":"file1.tpl", "params":{}},
+    {"name":"file1.txt", "params":{}},
+    {"name":"file1.rat", "params":{}}
+  ],
+  "filePlugins": ["template"],
+
+  "filePluginParameters" : {
+      "template":{
+        "allowedExtensions":["rat","tpl"]
+      }
+  }
+}
